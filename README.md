@@ -13,12 +13,12 @@ and keep the results as Markdown.
 </div>
 
 ```sh
-ytsum "https://youtu.be/20CgG5pUv9Q"
+ytsum "https://youtu.be/kCc8FmEb1nY"
 ```
 
-![An illustrative ytsum summary with an overview and clear takeaways](docs/terminal.svg)
+![Illustrative summary of Andrej Karpathy's GPT-from-scratch tutorial](docs/terminal.svg)
 
-*Illustrative output. Actual summaries use the video's title, link, and captions.*
+*Illustrative notes for [Andrej Karpathy's GPT-from-scratch tutorial](https://youtu.be/kCc8FmEb1nY). Actual model output varies.*
 
 ## What you get
 
@@ -79,7 +79,7 @@ See [choosing a model](#choosing-a-model) for a smaller option.
 ### 4. Summarize a video
 
 ```sh
-ytsum "https://youtu.be/20CgG5pUv9Q"
+ytsum "https://youtu.be/kCc8FmEb1nY"
 ```
 
 The first run fetches captions and generates a summary. Repeating the same
@@ -111,9 +111,9 @@ Summaries are in English.
 ### Copied links work too
 
 ```sh
-ytsum 20CgG5pUv9Q
-ytsum 'https://www.youtube.com/watch\?v\=20CgG5pUv9Q'
-ytsum '[Watch this](https://youtu.be/20CgG5pUv9Q)'
+ytsum kCc8FmEb1nY
+ytsum 'https://www.youtube.com/watch\?v\=kCc8FmEb1nY'
+ytsum '[Watch this](https://youtu.be/kCc8FmEb1nY)'
 ```
 
 The same normalization applies to clipboard input. Literal shell escapes,
@@ -124,8 +124,8 @@ the video is identified. URL text is never executed as shell code.
 ### Files and pipes
 
 ```sh
-ytsum "https://youtu.be/20CgG5pUv9Q" --detailed -o notes/video.md
-ytsum "https://youtu.be/20CgG5pUv9Q" > summary.md
+ytsum "https://youtu.be/kCc8FmEb1nY" --detailed -o notes/video.md
+ytsum "https://youtu.be/kCc8FmEb1nY" > summary.md
 cat transcript.txt | ytsum - --brief
 ```
 
@@ -146,7 +146,7 @@ to reduce latency, and models stay loaded for up to ten minutes between requests
 
 ```sh
 ollama pull qwen3.5:4b-q4_K_M
-ytsum "https://youtu.be/20CgG5pUv9Q" --model qwen3.5:4b-q4_K_M
+ytsum "https://youtu.be/kCc8FmEb1nY" --model qwen3.5:4b-q4_K_M
 ```
 
 Set `YTSUM_MODEL` in your shell to change the default:

@@ -20,23 +20,25 @@ def main() -> None:
         color_system="truecolor",
         theme=Theme({"markdown.h1": "bold cyan", "markdown.h2": "bold cyan"}),
     )
-    console.print('$ ytsum "https://youtu.be/VIDEO_ID" --brief', style="bold cyan", markup=False)
+    console.print('$ ytsum "https://youtu.be/kCc8FmEb1nY" --brief', style="bold cyan", markup=False)
     console.print()
     transcript = Transcript(
-        title="A practical guide to API caching",
-        url="https://www.youtube.com/watch?v=VIDEO_ID",
-        text="Illustrative example; no video transcript is used to generate this preview.",
+        title="Let's build GPT: from scratch, in code, spelled out.",
+        url="https://www.youtube.com/watch?v=kCc8FmEb1nY",
+        text="Illustrative notes based on Andrej Karpathy's GPT-from-scratch tutorial.",
     )
     summary = {
         "summary": (
-            "Caching repeated reads can reduce unnecessary network requests. "
-            "Start with a measured baseline, cache data that changes slowly, and "
-            "compare the result before rolling the change out."
+            "Karpathy builds a small GPT-style language model in PyTorch, starting "
+            "with a character-level bigram baseline and developing a decoder-only "
+            "Transformer. The walkthrough connects next-token prediction, causal "
+            "self-attention and text generation using Shakespeare data."
         ),
         "takeaways": [
-            "Cache stable responses and keep rapidly changing data fresh.",
-            "Choose an expiry that matches how often the underlying data changes.",
-            "Compare latency and error rates before and after each change.",
+            "Start with a bigram model to establish a working training and generation loop.",
+            "Use causal self-attention to draw on earlier context without seeing future tokens.",
+            "Combine attention heads, feed-forward layers, residual connections and layer normalization.",
+            "Compare training and validation loss, then sample new text one token at a time.",
         ],
         "details": [],
         "actions": [],
