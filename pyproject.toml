@@ -4,15 +4,25 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ytsum"
-version = "0.1.2"
-description = "Readable YouTube summaries using ytt and local Ollama models"
+version = "0.2.0"
+description = "Source-linked YouTube notes, playlists, and local transcription with Ollama"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Lucas" }]
 keywords = ["youtube", "summary", "transcript", "ollama", "cli", "markdown"]
 requires-python = ">=3.12"
-dependencies = ["pyperclip>=1.9,<2", "rich>=13.9,<15"]
+dependencies = [
+    "pyperclip>=1.9,<2",
+    "requests>=2.32,<3",
+    "rich>=13.9,<15",
+    "youtube-transcript-api>=1.2.5,<2",
+    "yt-dlp[default]>=2026.1.1",
+]
+
+[project.optional-dependencies]
+# faster-whisper 1.x calls av.open(metadata_errors=...), removed in PyAV 19.
+transcribe = ["faster-whisper>=1.2,<2", "av>=11,<19"]
 
 [project.urls]
 Homepage = "https://github.com/lucasscariot/ytsum"
