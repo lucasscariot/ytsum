@@ -1,0 +1,52 @@
+{
+  "transcript": {
+    "title": "Let's build GPT: from scratch, in code, spelled out.",
+    "url": "https://www.youtube.com/watch?v=kCc8FmEb1nY",
+    "text": "down I ran the same thing and then we now get this down to 2.28 roughly and the output is still the generation is still not amazing but clearly the validation loss is improving because we were at 2.4 just now and so it helps to have multiple communication channels because obviously these tokens have a lot to talk about they want to find the\nforward um and embed and then this feed forward is just called sequentially right after the self attention so we self attend then we feed forward and you'll notice that the feet forward here when it's applying linear this is on a per token level all the tokens do this independently so the self attention is the communication and then once they've gathered all the data now\nconnections they come from this paper uh the presidual learning for image recognition from about 2015 uh that introduced the concept now these are basically what it means is you transform data but then you have a skip connection with addition from the previous features now the way I like to visualize it uh that I prefer is the",
+    "cues": [
+      {
+        "text": "down I ran the same thing and then we now get this down to 2.28 roughly and the output is still the generation is still not amazing but clearly the validation loss is improving because we were at 2.4 just now and so it helps to have multiple communication channels because obviously these tokens have a lot to talk about they want to find the",
+        "start": 5031.199,
+        "end": 5053.28
+      },
+      {
+        "text": "forward um and embed and then this feed forward is just called sequentially right after the self attention so we self attend then we feed forward and you'll notice that the feet forward here when it's applying linear this is on a per token level all the tokens do this independently so the self attention is the communication and then once they've gathered all the data now",
+        "start": 5152.32,
+        "end": 5175.119
+      },
+      {
+        "text": "connections they come from this paper uh the presidual learning for image recognition from about 2015 uh that introduced the concept now these are basically what it means is you transform data but then you have a skip connection with addition from the previous features now the way I like to visualize it uh that I prefer is the",
+        "start": 5320.48,
+        "end": 5345.32
+      }
+    ],
+    "source": "captions",
+    "language": "en"
+  },
+  "summary": {
+    "summary": "Karpathy builds a small GPT-style language model in PyTorch. The walkthrough connects next-token prediction, causal self-attention, and text generation using Shakespeare data.",
+    "takeaways": [
+      {
+        "text": "Multiple attention heads provide additional communication channels and improve validation loss in this experiment.",
+        "source_ids": [
+          "S1"
+        ]
+      },
+      {
+        "text": "Self-attention lets tokens exchange information; the feed-forward network then processes each token independently.",
+        "source_ids": [
+          "S2"
+        ]
+      },
+      {
+        "text": "Residual connections add the previous features back after a transformation.",
+        "source_ids": [
+          "S3"
+        ]
+      }
+    ],
+    "details": [],
+    "actions": [],
+    "caveats": []
+  }
+}

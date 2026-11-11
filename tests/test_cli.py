@@ -1,304 +1,185 @@
-import contextlib
 import io
-import json
-import subprocess
 import tempfile
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
-from unittest.mock import patch
-from urllib.error import HTTPError
+from unittest.mock import ANY, Mock, patch
+
+from rich.console import Console
 
 from ytsum import cli
+from ytsum.models import CliError, Cue, Transcript
 
-
-def sample_summary():
-    return {
-        "summary": "The speaker compares two approaches and recommends measuring the result.",
-        "takeaways": ["Measure before changing the system.", "Preserve the 30-day baseline."],
-        "details": ["The experiment lasts 30 days."],
-        "actions": [],
-        "caveats": [],
-    }
-
-
-TRANSCRIPT = cli.Transcript(
-    "An example video", "https://www.youtube.com/watch?v=oc8G53Tbsvs", "Measure for 30 days."
+VIDEO = "https://www.youtube.com/watch?v=20CgG5pUv9Q"
+OTHER = "https://www.youtube.com/watch?v=kCc8FmEb1nY"
+THIRD = "https://www.youtube.com/watch?v=jNQXAC9IVRw"
+SOURCE = Transcript(
+    "Video",
+    VIDEO,
+    "Measure latency first.",
+    (Cue("Measure latency first.", 65, 70),),
+    "captions",
+    "en",
 )
+SUMMARY = {
+    "summary": "Measure latency.",
+    "takeaways": [{"text": "Measure first.", "source_ids": ["S1"]}],
+    "details": [],
+    "actions": [],
+    "caveats": [],
+}
 
 
-class InputsTest(unittest.TestCase):
-    def test_common_copied_forms_include_the_exact_reported_escaped_url(self):
-        expected = "https://www.youtube.com/watch?v=20CgG5pUv9Q"
-        for value in [
-            r"https://www.youtube.com/watch\?v\=20CgG5pUv9Q",
-            r"https:\/\/www.youtube.com\/watch\?v\=20CgG5pUv9Q\&t\=10",
-            r"\"https://www.youtube.com/watch\?v\=20CgG5pUv9Q\"",
-            ' "https://www.youtube.com/watch?v=20CgG5pUv9Q" ',
-            "‘https://youtu.be/20CgG5pUv9Q’",
-            "“https://youtu.be/20CgG5pUv9Q”",
-            "`https://youtu.be/20CgG5pUv9Q`",
-            "<https://youtu.be/20CgG5pUv9Q>",
-            "[Watch this video](https://youtu.be/20CgG5pUv9Q)",
-            "[Watch this video](<https://youtu.be/20CgG5pUv9Q>)",
-            "https://youtube.com/watch/?v=20CgG5pUv9Q",
-            "https://youtube.com/watch?feature=shared&amp;v=20CgG5pUv9Q",
-            "https://youtube.com/watch%3Fv%3D20CgG5pUv9Q%26t%3D30",
-            "https%3A%2F%2Fyoutu.be%2F20CgG5pUv9Q",
-            "\ufeffhttps://youtu.be/20CgG5pUv9Q\u200b",
-            "https://youtu.be/20Cg\u200bG5pUv9Q",
-        ]:
-            with self.subTest(value=value):
-                self.assertEqual(cli.canonical_url(value), expected)
+class CliTests(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        environment = patch.dict("os.environ", {"XDG_CACHE_HOME": str(self.root / "cache")})
+        environment.start()
+        self.addCleanup(environment.stop)
+        self.stderr = Console(file=io.StringIO())
 
-    def test_all_supported_links_resolve_to_the_same_video(self):
-        for value in [
-            "oc8G53Tbsvs",
-            "youtube.com/watch?v=oc8G53Tbsvs&t",
-            "https://youtu.be/oc8G53Tbsvs?si=tracking",
-            "https://m.youtube.com/watch?v=oc8G53Tbsvs",
-            "https://www.youtube.com/shorts/oc8G53Tbsvs",
-            "https://youtube.com/live/oc8G53Tbsvs",
-        ]:
-            with self.subTest(value=value):
-                self.assertEqual(cli.canonical_url(value), TRANSCRIPT.url)
-
-    def test_rejects_other_sites_and_invalid_video_ids(self):
-        for value in [
-            "https://evil.example/watch?v=oc8G53Tbsvs",
-            "https://youtube.com.evil.example/watch?v=oc8G53Tbsvs",
-            "youtube.com/watch?v=bad",
-            "file:///tmp/captions",
-            "[Watch](https://evil.example/watch?v=oc8G53Tbsvs)",
-            "https%3A%2F%2Fevil.example%2Fwatch%3Fv%3Doc8G53Tbsvs",
-            r"https://youtube.com.evil.example/watch\?v\=oc8G53Tbsvs",
-            "https://evil.example/?next=https://youtube.com/watch?v=oc8G53Tbsvs",
-            "$(echo https://youtu.be/oc8G53Tbsvs)",
-            "https://[youtube.com/watch?v=oc8G53Tbsvs",
-        ]:
-            with self.subTest(value=value), self.assertRaises(cli.CliError):
-                cli.canonical_url(value)
-
-    def test_fetch_uses_explicit_command_and_preserves_clipboard(self):
-        output = f"{TRANSCRIPT.url}\n\n# {TRANSCRIPT.title}\n\n## Transcript\n\n{TRANSCRIPT.text}\n"
-        result = subprocess.CompletedProcess([], 0, output, "")
-        with patch.object(cli.subprocess, "run", return_value=result) as run:
-            self.assertEqual(cli.fetch_transcript("oc8G53Tbsvs", refresh=True), TRANSCRIPT)
-        command = run.call_args.args[0]
-        self.assertEqual(command[:2], ["ytt", "fetch"])
-        self.assertIn("--no-copy", command)
-        self.assertIn("--refresh", command)
-        self.assertIn(TRANSCRIPT.url, command)
-
-    def test_escaped_argument_is_normalized_before_invoking_ytt(self):
-        output = f"{TRANSCRIPT.url}\n\n# Video\n\n## Transcript\n\nCaptions.\n"
-        result = subprocess.CompletedProcess([], 0, output, "")
-        with patch.object(cli.subprocess, "run", return_value=result) as run:
-            cli.fetch_transcript(r"https://www.youtube.com/watch\?v\=20CgG5pUv9Q")
-        self.assertIn("https://www.youtube.com/watch?v=20CgG5pUv9Q", run.call_args.args[0])
-        self.assertNotIn("shell", run.call_args.kwargs)
-
-    def test_clipboard_inputs_use_the_same_normalization_and_never_copy(self):
-        output = f"{TRANSCRIPT.url}\n\n# Video\n\n## Transcript\n\nCaptions.\n"
-        result = subprocess.CompletedProcess([], 0, output, "")
-        with (
-            patch.object(cli.pyperclip, "paste", return_value=r"youtube.com/watch\?v\=oc8G53Tbsvs"),
-            patch.object(cli.pyperclip, "copy") as copy,
-            patch.object(cli.subprocess, "run", return_value=result) as run,
-        ):
-            cli.fetch_transcript(None)
-        self.assertIn(TRANSCRIPT.url, run.call_args.args[0])
-        self.assertIn("--no-copy", run.call_args.args[0])
-        copy.assert_not_called()
-
-    def test_empty_or_unavailable_clipboard_has_an_actionable_error(self):
-        with (
-            patch.object(cli.pyperclip, "paste", return_value=" \n"),
-            patch.object(cli.subprocess, "run") as run,
-            self.assertRaisesRegex(cli.CliError, "Clipboard is empty"),
-        ):
-            cli.fetch_transcript(None)
-        run.assert_not_called()
-        with (
-            patch.object(cli.pyperclip, "paste", side_effect=cli.pyperclip.PyperclipException()),
-            self.assertRaisesRegex(cli.CliError, "Pass the YouTube link"),
-        ):
-            cli.fetch_transcript(None)
-
-    def test_explicit_empty_argument_does_not_fall_back_to_the_clipboard(self):
-        with (
-            patch.object(cli.pyperclip, "paste") as paste,
-            self.assertRaises(cli.CliError),
-        ):
-            cli.fetch_transcript("")
-        paste.assert_not_called()
-
-    def test_malformed_url_reports_an_error_without_a_traceback(self):
-        stderr = io.StringIO()
-        with (
-            patch.object(cli.sys, "argv", ["ytsum", "https://[broken/watch?v=oc8G53Tbsvs", "-q"]),
-            contextlib.redirect_stderr(stderr),
-        ):
-            self.assertEqual(cli.main(), 1)
-        self.assertIn("Invalid video link", stderr.getvalue())
-        self.assertNotIn("Traceback", stderr.getvalue())
-
-    def test_fetch_failures_and_empty_captions_are_actionable(self):
-        result = subprocess.CompletedProcess([], 1, "", "Captions are disabled.")
-        with (
-            patch.object(cli.subprocess, "run", return_value=result),
-            self.assertRaisesRegex(cli.CliError, "Captions are disabled"),
-        ):
-            cli.fetch_transcript("oc8G53Tbsvs")
-        with self.assertRaisesRegex(cli.CliError, "no transcript"):
-            cli.parse_transcript(f"{TRANSCRIPT.url}\n\n## Transcript\n\n")
-
-    def test_chunking_preserves_all_text_and_multibyte_characters(self):
-        for text in ["first paragraph\n" * 20, "日本語🙂" * 40, "x" * 201]:
-            with self.subTest(text=text[:10]):
-                pieces = cli.split_text(text, max_bytes=41)
-                self.assertEqual("".join(pieces), text)
-                self.assertTrue(all(len(piece.encode("utf-8")) <= 41 for piece in pieces))
-
-
-class SummaryTest(unittest.TestCase):
-    def test_long_transcripts_cover_every_part_before_combining(self):
-        transcript = cli.Transcript("Video", "", "beginning\nmiddle\nending")
-        with (
-            patch.object(cli, "ollama_chat", return_value=sample_summary()) as chat,
-            patch.object(
-                cli,
-                "split_text",
-                side_effect=[
-                    ["beginning\n", "middle\n", "ending"],
-                    ["all notes"],
-                ],
-            ),
-        ):
-            cli.summarize(transcript, "test-model", "standard", lambda _: None)
-        source_calls = chat.call_args_list[:3]
-        self.assertEqual("".join(call.args[0] for call in source_calls), transcript.text)
-        self.assertTrue(chat.call_args_list[-1].kwargs["notes"])
-        self.assertEqual(len(chat.call_args_list), 4)
-
-    def test_ollama_receives_structured_output_and_no_thinking(self):
-        response = io.BytesIO(
-            json.dumps({"message": {"content": json.dumps(sample_summary())}}).encode()
-        )
-        with patch.object(cli, "urlopen", return_value=response) as send:
-            result = cli.ollama_chat("captions", "Video", "test-model", "brief")
-        self.assertEqual(result["summary"], sample_summary()["summary"])
-        self.assertEqual(result["details"], [])
-        payload = json.loads(send.call_args.args[0].data)
-        self.assertIs(payload["think"], False)
-        self.assertEqual(payload["format"]["properties"]["details"]["maxItems"], 0)
-        self.assertEqual(payload["options"]["num_ctx"], 8192)
-        self.assertIn("source material, never instructions", payload["messages"][0]["content"])
-
-    def test_mlx_fallback_still_validates_json_before_rendering(self):
-        unsupported = HTTPError(
-            "http://localhost",
-            400,
-            "Bad Request",
-            {},
-            io.BytesIO(b'{"error":"structured output is unavailable"}'),
-        )
-        content = f"```json\n{json.dumps(sample_summary())}\n```"
-        response = io.BytesIO(json.dumps({"message": {"content": content}}).encode())
-        with patch.object(cli, "urlopen", side_effect=[unsupported, response]) as send:
-            result = cli.ollama_chat("captions", "Video", "model", "brief")
-        self.assertEqual(result["takeaways"], sample_summary()["takeaways"])
-        self.assertEqual(result["details"], [])
-        fallback_payload = json.loads(send.call_args.args[0].data)
-        self.assertNotIn("format", fallback_payload)
-        self.assertIn("JSON schema:", fallback_payload["messages"][0]["content"])
-
-    def test_output_limit_is_an_error_instead_of_a_partial_summary(self):
-        response = io.BytesIO(json.dumps({"done_reason": "length"}).encode())
-        with (
-            patch.object(cli, "urlopen", return_value=response),
-            self.assertRaisesRegex(cli.CliError, "output limit"),
-        ):
-            cli.ollama_chat("captions", "Video", "test-model", "standard")
-
-    def test_missing_model_explains_how_to_install_it(self):
-        error = HTTPError("http://localhost", 404, "Not Found", {}, io.BytesIO())
-        with (
-            patch.object(cli, "urlopen", side_effect=error),
-            self.assertRaisesRegex(cli.CliError, "ollama pull example:4b"),
-        ):
-            cli.ollama_chat("captions", "Video", "example:4b", "standard")
-
-    def test_invalid_sections_are_rejected(self):
-        summary = sample_summary()
-        summary["takeaways"] = "This must be a list."
-        with self.assertRaises(cli.CliError):
-            cli.validate_summary(summary)
-
-
-class OutputAndCacheTest(unittest.TestCase):
-    def test_generation_error_preserves_existing_output_and_prints_no_partial_summary(self):
-        with tempfile.TemporaryDirectory() as directory:
-            destination = Path(directory) / "notes.md"
-            destination.write_text("Existing notes must survive.")
-            args = cli.build_parser().parse_args(
-                ["oc8G53Tbsvs", "-q", "--no-cache", "-o", str(destination)]
-            )
-            stdout = io.StringIO()
-            with (
-                patch.object(cli, "fetch_transcript", return_value=TRANSCRIPT),
-                patch.object(cli, "ollama_chat", side_effect=cli.CliError("Generation failed.")),
-                contextlib.redirect_stdout(stdout),
-                self.assertRaisesRegex(cli.CliError, "Generation failed"),
-            ):
-                cli.run(args)
-            self.assertEqual(destination.read_text(), "Existing notes must survive.")
-            self.assertEqual(stdout.getvalue(), "")
-
-    def test_clean_markdown_omits_empty_sections_and_control_sequences(self):
-        summary = sample_summary()
-        summary["takeaways"][0] = "\x1b[31m- Measure before changing the system.\x1b[0m"
-        rendered = cli.markdown_summary(TRANSCRIPT, cli.validate_summary(summary))
-        self.assertIn("# An example video\n", rendered)
-        self.assertIn("## Key takeaways\n", rendered)
-        self.assertIn("- Measure before changing", rendered)
-        self.assertNotIn("## Action items", rendered)
-        self.assertNotIn("\x1b", rendered)
-
-    def test_cache_invalidates_on_transcript_model_and_style_changes(self):
-        keys = {
-            cli.cache_path(TRANSCRIPT, "a", "brief"),
-            cli.cache_path(TRANSCRIPT, "b", "brief"),
-            cli.cache_path(TRANSCRIPT, "a", "detailed"),
-            cli.cache_path(cli.Transcript("changed", "", "changed"), "a", "brief"),
-        }
-        self.assertEqual(len(keys), 4)
-
-    def test_corrupt_cache_is_ignored(self):
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "cache.json"
-            path.write_text("not json")
-            self.assertIsNone(cli.read_cache(path))
-            cli.atomic_write(path, json.dumps(sample_summary()))
-            self.assertEqual(cli.read_cache(path), sample_summary())
+    def execute(self, *arguments):
+        args = cli.build_parser().parse_args(list(arguments))
+        return cli.execute(args, Mock(), self.stderr)
 
     def test_cache_hit_skips_inference_and_saved_output_matches_stdout(self):
-        with tempfile.TemporaryDirectory() as directory:
-            destination = Path(directory) / "notes.md"
-            cache = Path(directory) / "cached.json"
-            cli.atomic_write(cache, json.dumps(sample_summary()))
-            args = cli.build_parser().parse_args(["oc8G53Tbsvs", "-q", "-o", str(destination)])
-            stdout = io.StringIO()
+        output = self.root / "notes.md"
+        with (
+            patch.object(cli, "acquire", return_value=SOURCE),
+            patch.object(cli.summaries, "summarize", return_value=SUMMARY) as model,
+        ):
+            first, _, code = self.execute(VIDEO, "-o", str(output))
+            second, footer, _ = self.execute(VIDEO, "-o", str(output))
+        self.assertEqual(code, 0)
+        self.assertEqual(first, second)
+        self.assertEqual(output.read_text(), second)
+        self.assertIn("cached", footer)
+        model.assert_called_once()
+
+    def test_generation_failure_preserves_existing_output_and_no_partial_stdout(self):
+        output = self.root / "notes.md"
+        output.write_text("Keep these notes.")
+        stdout = io.StringIO()
+        with (
+            patch("sys.argv", ["ytsum", VIDEO, "-o", str(output), "-q"]),
+            patch.object(cli, "acquire", return_value=SOURCE),
+            patch.object(cli.summaries, "summarize", side_effect=CliError("generation failed")),
+            redirect_stdout(stdout),
+            redirect_stderr(io.StringIO()),
+        ):
+            code = cli.main()
+        self.assertEqual(code, 1)
+        self.assertEqual(stdout.getvalue(), "")
+        self.assertEqual(output.read_text(), "Keep these notes.")
+
+    def test_batch_continues_after_failure_and_preserves_previous_note(self):
+        old = self.root / "kCc8FmEb1nY.md"
+        old.write_text("Previous successful summary")
+        third = Transcript("Third", THIRD, SOURCE.text, SOURCE.cues, "captions")
+        with (
+            patch.object(cli, "acquire", side_effect=[SOURCE, CliError("Video is private"), third]),
+            patch.object(cli, "generate", return_value=("# Saved notes\n", False)),
+        ):
+            index, _, code = self.execute(VIDEO, OTHER, THIRD, "-d", str(self.root))
+        self.assertEqual(code, 1)
+        self.assertTrue((self.root / "20CgG5pUv9Q.md").is_file())
+        self.assertTrue((self.root / "jNQXAC9IVRw.md").is_file())
+        self.assertEqual(old.read_text(), "Previous successful summary")
+        self.assertEqual(index, (self.root / "index.md").read_text())
+        self.assertIn("2 saved · 1 failed", index)
+        self.assertIn("Video is private", index)
+
+    def test_batch_file_and_stdin_read_urls_and_deduplicate(self):
+        batch = self.root / "urls.txt"
+        batch.write_text(f"# My list\n\n{VIDEO}\n{VIDEO}\n")
+        for filename in (str(batch), "-"):
             with (
-                patch.object(cli, "fetch_transcript", return_value=TRANSCRIPT),
-                patch.object(cli, "cache_path", return_value=cache),
-                patch.object(cli, "ollama_chat") as chat,
-                contextlib.redirect_stdout(stdout),
+                self.subTest(filename=filename),
+                patch("sys.stdin", io.StringIO(batch.read_text())),
+                patch.object(cli, "acquire", return_value=SOURCE) as acquire,
+                patch.object(cli, "generate", return_value=("Notes\n", True)),
             ):
-                self.assertEqual(cli.run(args), 0)
-            chat.assert_not_called()
-            self.assertEqual(destination.read_text(), stdout.getvalue())
-            self.assertNotIn("\x1b", stdout.getvalue())
+                _, _, code = self.execute("--batch", filename, "-d", str(self.root))
+            self.assertEqual(code, 0)
+            acquire.assert_called_once()
 
+    def test_playlist_produces_index_even_with_one_video(self):
+        with (
+            patch.object(cli.sources, "list_playlist", return_value=[VIDEO]),
+            patch.object(cli, "acquire", return_value=SOURCE),
+            patch.object(cli, "generate", return_value=("Notes\n", False)),
+        ):
+            _, _, code = self.execute(
+                "youtube.com/playlist?list=PLexample", "--limit", "1", "-d", str(self.root)
+            )
+        self.assertEqual(code, 0)
+        self.assertTrue((self.root / "index.md").is_file())
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_invalid_batch_encoding_has_an_actionable_error_before_inference(self):
+        batch = self.root / "bad.txt"
+        batch.write_bytes(b"\xff\xfe")
+        with patch.object(cli, "acquire") as acquire, self.assertRaisesRegex(CliError, "UTF-8"):
+            self.execute("--batch", str(batch))
+        acquire.assert_not_called()
+
+    def test_clipboard_uses_same_normalization_and_explicit_empty_does_not_read_it(self):
+        with (
+            patch.object(
+                cli, "clipboard_url", return_value=r"https://youtu.be/20CgG5pUv9Q"
+            ) as clipboard,
+            patch.object(cli, "acquire", return_value=SOURCE) as acquire,
+            patch.object(cli, "generate", return_value=("Notes", False)),
+        ):
+            self.execute()
+            acquire.assert_called_once_with(VIDEO, ANY, ANY)
+            clipboard.assert_called_once()
+        with patch.object(cli, "clipboard_url") as clipboard, self.assertRaises(CliError):
+            self.execute("")
+        clipboard.assert_not_called()
+
+    def test_batch_rejects_single_output_before_inference(self):
+        with (
+            patch.object(cli, "acquire") as acquire,
+            self.assertRaisesRegex(CliError, "output-dir"),
+        ):
+            self.execute(VIDEO, OTHER, "-o", str(self.root / "notes.md"))
+        acquire.assert_not_called()
+
+    def test_transcript_input_is_untimed_and_rejects_empty_or_incompatible_flags(self):
+        with (
+            patch("sys.stdin", io.StringIO("Measure latency first.")),
+            patch.object(cli.summaries, "summarize", return_value=SUMMARY),
+        ):
+            output, _, code = self.execute("-")
+        self.assertEqual(code, 0)
+        self.assertNotIn("&t=", output)
+        for arguments in (("-",), ("-", VIDEO), ("-", "--batch", "-"), ("-", "-d", str(self.root))):
+            with (
+                self.subTest(arguments=arguments),
+                patch("sys.stdin", io.StringIO("")),
+                patch.object(cli, "generate") as generate,
+                self.assertRaises(CliError),
+            ):
+                self.execute(*arguments)
+            generate.assert_not_called()
+
+    def test_malformed_url_returns_one_without_traceback(self):
+        stderr = io.StringIO()
+        with (
+            patch("sys.argv", ["ytsum", "https://[youtube.com/watch?v=20CgG5pUv9Q", "-q"]),
+            redirect_stderr(stderr),
+        ):
+            self.assertEqual(cli.main(), 1)
+        self.assertNotIn("Traceback", stderr.getvalue())
+
+    def test_interrupt_preserves_completed_notes_and_index(self):
+        with (
+            patch.object(cli, "acquire", side_effect=[SOURCE, KeyboardInterrupt()]),
+            patch.object(cli, "generate", return_value=("Notes\n", False)),
+            self.assertRaises(KeyboardInterrupt),
+        ):
+            self.execute(VIDEO, OTHER, "-d", str(self.root))
+        self.assertEqual((self.root / "20CgG5pUv9Q.md").read_text(), "Notes\n")
+        self.assertIn("1 saved · 0 failed", (self.root / "index.md").read_text())
