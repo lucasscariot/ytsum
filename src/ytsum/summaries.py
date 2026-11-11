@@ -16,6 +16,8 @@ from .models import CliError, SourceBlock, Transcript, cache_root, clean_text
 DEFAULT_MODEL = "qwen3.5:9b-q4_K_M"
 PROMPT_VERSION = 5
 CHUNK_BYTES = 44_000
+MAX_CONTEXT = 65_536
+PREDICT_TOKENS = {"brief": 1200, "standard": 2200, "detailed": 3400}
 LIST_FIELDS = ("takeaways", "details", "actions", "caveats")
 STYLES = {
     "brief": "About 120-180 words, excluding source excerpts, much shorter for short sources. A 1-2 sentence summary and up to 5 distinct takeaways; 1-2 suffice for a short source. Other arrays must be empty.",
@@ -116,28 +118,35 @@ def validate_summary(value: object, allowed_ids: set[str]) -> dict:
     return result
 
 
-def ollama_chat(
-    text: str, title: str, model: str, style: str, ids: set[str], *, notes=False
-) -> dict:
-    if not ids:
-        raise CliError("No source passages are available for this summary.")
+def chat_messages(text: str, title: str, style: str, schema: dict, *, notes=False) -> list[dict]:
     task = (
         "Combine these ordered notes from all parts of one video. Preserve their source IDs."
         if notes
         else "Summarize these source passages."
     )
-    schema = response_schema(ids, style)
-    messages = [
+    return [
         {"role": "system", "content": f"{SYSTEM_PROMPT}\nJSON schema: {json.dumps(schema)}"},
         {
             "role": "user",
             "content": f"Video: {title[:500]}\n\n<source_material>\n{text}\n</source_material>\n\n{task}\n{STYLES[style]}\nCheck every number and qualification against the source. Return only JSON.",
         },
     ]
-    predict = {"brief": 1200, "standard": 2200, "detailed": 3400}[style]
-    required = len(json.dumps(messages, ensure_ascii=False).encode()) + predict + 1200
+
+
+def required_context(messages: list[dict], style: str) -> int:
+    return len(json.dumps(messages, ensure_ascii=False).encode()) + PREDICT_TOKENS[style] + 1200
+
+
+def ollama_chat(
+    text: str, title: str, model: str, style: str, ids: set[str], *, notes=False
+) -> dict:
+    if not ids:
+        raise CliError("No source passages are available for this summary.")
+    schema = response_schema(ids, style)
+    messages = chat_messages(text, title, style, schema, notes=notes)
+    required = required_context(messages, style)
     context = max(8192, 1 << (required - 1).bit_length())
-    if context > 65536:
+    if context > MAX_CONTEXT:
         raise CliError("Context budget exceeded; no source text was sent or truncated.")
     payload = {
         "model": model,
@@ -146,7 +155,7 @@ def ollama_chat(
         "think": False,
         "stream": False,
         "keep_alive": "10m",
-        "options": {"temperature": 0.2, "num_ctx": context, "num_predict": predict},
+        "options": {"temperature": 0.2, "num_ctx": context, "num_predict": PREDICT_TOKENS[style]},
     }
     host = os.environ.get("OLLAMA_HOST") or "http://127.0.0.1:11434"
     if "://" not in host:
@@ -211,16 +220,31 @@ def source_text(block: SourceBlock) -> str:
     return f"[{block.id}{time}] {block.text}"
 
 
-def group_items(items, render, budget=CHUNK_BYTES):
+def group_items(items, render, get_ids, title, *, notes=False, budget=CHUNK_BYTES):
+    """Keep whole items within both the text and full request budgets."""
     batches, batch, size = [], [], 0
+    texts, ids = [], set()
+
+    def fits(parts, passage_ids):
+        # Parts use detailed summaries, which reserve the largest output budget.
+        schema = response_schema(passage_ids, "detailed")
+        messages = chat_messages("\n".join(parts), title, "detailed", schema, notes=notes)
+        return required_context(messages, "detailed") <= MAX_CONTEXT
+
     for item in items:
-        amount = len(render(item).encode("utf-8")) + 2
+        text, item_ids = render(item), get_ids(item)
+        amount = len(text.encode("utf-8")) + 2
         if amount > budget:
             raise CliError("A source passage exceeds the context budget.")
-        if batch and size + amount > budget:
+        if batch and (size + amount > budget or not fits([*texts, text], ids | item_ids)):
             batches.append(batch)
             batch, size = [], 0
+            texts, ids = [], set()
+        if not batch and not fits([text], item_ids):
+            raise CliError("A source passage exceeds the context budget.")
         batch.append(item)
+        texts.append(text)
+        ids.update(item_ids)
         size += amount
     if batch:
         batches.append(batch)
@@ -234,7 +258,9 @@ def summary_ids(summary: dict) -> set[str]:
 
 
 def summarize(transcript: Transcript, model: str, style: str, progress) -> dict:
-    chunks = group_items(transcript.blocks(), source_text)
+    chunks = group_items(
+        transcript.blocks(), source_text, lambda block: {block.id}, transcript.title
+    )
     if not chunks:
         raise CliError("The transcript is empty.")
     if len(chunks) == 1:
@@ -259,7 +285,13 @@ def summarize(transcript: Transcript, model: str, style: str, progress) -> dict:
             )
         )
     for _ in range(8):
-        batches = group_items(notes, lambda item: json.dumps(item, ensure_ascii=False))
+        batches = group_items(
+            notes,
+            lambda item: json.dumps(item, ensure_ascii=False),
+            summary_ids,
+            transcript.title,
+            notes=True,
+        )
         if len(batches) == 1:
             progress("Combining source-linked notes…")
             return ollama_chat(

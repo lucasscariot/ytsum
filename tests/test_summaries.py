@@ -167,6 +167,100 @@ class GenerationTests(unittest.TestCase):
         self.assertTrue(chat.call_args_list[-1].kwargs["notes"])
         summaries.validate_summary(result, {block.id for block in source.blocks()})
 
+    def test_sparse_transcripts_fit_requests_without_losing_passages(self):
+        for count, style in [(800, "brief"), (800, "standard"), (2000, "detailed")]:
+            cues = tuple(Cue("A short spoken sentence.", i * 21, i * 21 + 1) for i in range(count))
+            source = Transcript("Sparse video", VIDEO, "\n".join(cue.text for cue in cues), cues)
+            requests = []
+
+            def respond(request, timeout):
+                payload = json.loads(request.data)
+                requests.append(payload)
+                ids = payload["format"]["properties"]["takeaways"]["items"]["properties"][
+                    "source_ids"
+                ]["items"]["enum"]
+                return io.BytesIO(
+                    json.dumps(
+                        {"message": {"content": json.dumps(sample_summary(ids[:1]))}}
+                    ).encode()
+                )
+
+            with (
+                self.subTest(count=count, style=style),
+                patch.object(summaries, "urlopen", side_effect=respond),
+            ):
+                result = summaries.summarize(source, "model", style, lambda _: None)
+                direct = [
+                    payload
+                    for payload in requests
+                    if "Summarize these source passages." in payload["messages"][1]["content"]
+                ]
+                self.assertGreater(len(direct), 1)
+                ids = [
+                    item
+                    for payload in direct
+                    for item in payload["format"]["properties"]["takeaways"]["items"]["properties"][
+                        "source_ids"
+                    ]["items"]["enum"]
+                ]
+                self.assertCountEqual(ids, [block.id for block in source.blocks()])
+                self.assertGreater(len(requests), len(direct))
+                for payload in requests:
+                    required = (
+                        len(json.dumps(payload["messages"], ensure_ascii=False).encode())
+                        + payload["options"]["num_predict"]
+                        + 1200
+                    )
+                    self.assertLessEqual(required, payload["options"]["num_ctx"])
+                    self.assertLessEqual(payload["options"]["num_ctx"], 65536)
+                summaries.validate_summary(result, {block.id for block in source.blocks()})
+
+    def test_note_reduction_fits_schema_even_when_note_text_fits_one_chunk(self):
+        cues = tuple(Cue("A short spoken sentence.", i * 21, i * 21 + 1) for i in range(6000))
+        source = Transcript("Sparse video", VIDEO, "\n".join(cue.text for cue in cues), cues)
+        partial_notes, progress = [], []
+
+        def respond(request, timeout):
+            payload = json.loads(request.data)
+            required = (
+                len(json.dumps(payload["messages"], ensure_ascii=False).encode())
+                + payload["options"]["num_predict"]
+                + 1200
+            )
+            self.assertLessEqual(required, payload["options"]["num_ctx"])
+            self.assertLessEqual(payload["options"]["num_ctx"], 65536)
+            ids = payload["format"]["properties"]["takeaways"]["items"]["properties"]["source_ids"][
+                "items"
+            ]["enum"]
+            note = {"summary": "Summary of the supplied passages."}
+            offset = 0
+            for field, limit in summaries.LIMITS["detailed"].items():
+                note[field] = []
+                for _ in range(limit):
+                    pair = ids[offset : offset + 2]
+                    if not pair:
+                        break
+                    note[field].append(
+                        {
+                            "text": f"Supporting statement from passages {', '.join(pair)}.",
+                            "source_ids": pair,
+                        }
+                    )
+                    offset += 2
+            if "Summarize these source passages." in payload["messages"][1]["content"]:
+                partial_notes.append(note)
+            return io.BytesIO(json.dumps({"message": {"content": json.dumps(note)}}).encode())
+
+        with patch.object(summaries, "urlopen", side_effect=respond):
+            result = summaries.summarize(source, "model", "standard", progress.append)
+        self.assertLess(
+            len("\n".join(json.dumps(note) for note in partial_notes).encode()),
+            summaries.CHUNK_BYTES,
+        )
+        self.assertIn("Condensing source-linked notes…", progress)
+        self.assertEqual(progress[-1], "Combining source-linked notes…")
+        summaries.validate_summary(result, {block.id for block in source.blocks()})
+
     def test_cache_identity_includes_timings_model_and_style(self):
         different_time = Transcript(
             SOURCE.title, SOURCE.url, SOURCE.text, (Cue(SOURCE.text, 100, 110),), "captions", "en"
