@@ -1,4 +1,4 @@
-<svg class="rich-terminal" viewBox="0 0 994 464.79999999999995" xmlns="http://www.w3.org/2000/svg">
+<svg class="rich-terminal" viewBox="0 0 994 611.1999999999999" xmlns="http://www.w3.org/2000/svg">
     <!-- Generated with Rich https://www.textualize.io -->
     <style>
 
@@ -41,7 +41,7 @@
 
     <defs>
     <clipPath id="ytsum-preview-clip-terminal">
-      <rect x="0" y="0" width="975.0" height="413.79999999999995" />
+      <rect x="0" y="0" width="975.0" height="560.1999999999999" />
     </clipPath>
     <clipPath id="ytsum-preview-line-0">
     <rect x="0" y="1.5" width="976" height="24.65"/>
@@ -91,9 +91,27 @@
 <clipPath id="ytsum-preview-line-15">
     <rect x="0" y="367.5" width="976" height="24.65"/>
             </clipPath>
+<clipPath id="ytsum-preview-line-16">
+    <rect x="0" y="391.9" width="976" height="24.65"/>
+            </clipPath>
+<clipPath id="ytsum-preview-line-17">
+    <rect x="0" y="416.3" width="976" height="24.65"/>
+            </clipPath>
+<clipPath id="ytsum-preview-line-18">
+    <rect x="0" y="440.7" width="976" height="24.65"/>
+            </clipPath>
+<clipPath id="ytsum-preview-line-19">
+    <rect x="0" y="465.1" width="976" height="24.65"/>
+            </clipPath>
+<clipPath id="ytsum-preview-line-20">
+    <rect x="0" y="489.5" width="976" height="24.65"/>
+            </clipPath>
+<clipPath id="ytsum-preview-line-21">
+    <rect x="0" y="513.9" width="976" height="24.65"/>
+            </clipPath>
     </defs>
 
-    <rect fill="#0f172a" stroke="rgba(255,255,255,0.35)" stroke-width="1" x="1" y="1" width="992" height="462.8" rx="8"/><text class="ytsum-preview-title" fill="#e2e8f0" text-anchor="middle" x="496" y="27">ytsum</text>
+    <rect fill="#0f172a" stroke="rgba(255,255,255,0.35)" stroke-width="1" x="1" y="1" width="992" height="609.2" rx="8"/><text class="ytsum-preview-title" fill="#e2e8f0" text-anchor="middle" x="496" y="27">ytsum</text>
             <g transform="translate(26,22)">
             <circle cx="0" cy="0" r="7" fill="#ff5f57"/>
             <circle cx="22" cy="0" r="7" fill="#febc2e"/>
@@ -103,23 +121,29 @@
     <g transform="translate(9, 41)" clip-path="url(#ytsum-preview-clip-terminal)">
 
     <g class="ytsum-preview-matrix">
-    <text class="ytsum-preview-r1" x="0" y="20" textLength="97.6" clip-path="url(#ytsum-preview-line-0)">$&#160;ytsum&#160;</text><text class="ytsum-preview-r2" x="97.6" y="20" textLength="329.4" clip-path="url(#ytsum-preview-line-0)">&quot;https://youtu.be/VIDEO_ID&quot;</text><text class="ytsum-preview-r1" x="427" y="20" textLength="97.6" clip-path="url(#ytsum-preview-line-0)">&#160;--brief</text><text class="ytsum-preview-r3" x="976" y="20" textLength="12.2" clip-path="url(#ytsum-preview-line-0)">
+    <text class="ytsum-preview-r1" x="0" y="20" textLength="97.6" clip-path="url(#ytsum-preview-line-0)">$&#160;ytsum&#160;</text><text class="ytsum-preview-r2" x="97.6" y="20" textLength="366" clip-path="url(#ytsum-preview-line-0)">&quot;https://youtu.be/kCc8FmEb1nY&quot;</text><text class="ytsum-preview-r1" x="463.6" y="20" textLength="97.6" clip-path="url(#ytsum-preview-line-0)">&#160;--brief</text><text class="ytsum-preview-r3" x="976" y="20" textLength="12.2" clip-path="url(#ytsum-preview-line-0)">
 </text><text class="ytsum-preview-r3" x="976" y="44.4" textLength="12.2" clip-path="url(#ytsum-preview-line-1)">
-</text><text class="ytsum-preview-r1" x="292.8" y="68.8" textLength="390.4" clip-path="url(#ytsum-preview-line-2)">A&#160;practical&#160;guide&#160;to&#160;API&#160;caching</text><text class="ytsum-preview-r3" x="976" y="68.8" textLength="12.2" clip-path="url(#ytsum-preview-line-2)">
+</text><text class="ytsum-preview-r1" x="170.8" y="68.8" textLength="634.4" clip-path="url(#ytsum-preview-line-2)">Let&#x27;s&#160;build&#160;GPT:&#160;from&#160;scratch,&#160;in&#160;code,&#160;spelled&#160;out.</text><text class="ytsum-preview-r3" x="976" y="68.8" textLength="12.2" clip-path="url(#ytsum-preview-line-2)">
 </text><text class="ytsum-preview-r3" x="976" y="93.2" textLength="12.2" clip-path="url(#ytsum-preview-line-3)">
 </text><text class="ytsum-preview-r4" x="0" y="117.6" textLength="195.2" clip-path="url(#ytsum-preview-line-4)">Watch&#160;on&#160;YouTube</text><text class="ytsum-preview-r3" x="976" y="117.6" textLength="12.2" clip-path="url(#ytsum-preview-line-4)">
 </text><text class="ytsum-preview-r3" x="976" y="142" textLength="12.2" clip-path="url(#ytsum-preview-line-5)">
 </text><text class="ytsum-preview-r1" x="0" y="166.4" textLength="85.4" clip-path="url(#ytsum-preview-line-6)">Summary</text><text class="ytsum-preview-r3" x="976" y="166.4" textLength="12.2" clip-path="url(#ytsum-preview-line-6)">
 </text><text class="ytsum-preview-r3" x="976" y="190.8" textLength="12.2" clip-path="url(#ytsum-preview-line-7)">
-</text><text class="ytsum-preview-r3" x="0" y="215.2" textLength="976" clip-path="url(#ytsum-preview-line-8)">Caching&#160;repeated&#160;reads&#160;can&#160;reduce&#160;unnecessary&#160;network&#160;requests.&#160;Start&#160;with&#160;a&#160;&#160;&#160;&#160;</text><text class="ytsum-preview-r3" x="976" y="215.2" textLength="12.2" clip-path="url(#ytsum-preview-line-8)">
-</text><text class="ytsum-preview-r3" x="0" y="239.6" textLength="976" clip-path="url(#ytsum-preview-line-9)">measured&#160;baseline,&#160;cache&#160;data&#160;that&#160;changes&#160;slowly,&#160;and&#160;compare&#160;the&#160;result&#160;before</text><text class="ytsum-preview-r3" x="976" y="239.6" textLength="12.2" clip-path="url(#ytsum-preview-line-9)">
-</text><text class="ytsum-preview-r3" x="0" y="264" textLength="976" clip-path="url(#ytsum-preview-line-10)">rolling&#160;the&#160;change&#160;out.&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</text><text class="ytsum-preview-r3" x="976" y="264" textLength="12.2" clip-path="url(#ytsum-preview-line-10)">
-</text><text class="ytsum-preview-r3" x="976" y="288.4" textLength="12.2" clip-path="url(#ytsum-preview-line-11)">
-</text><text class="ytsum-preview-r1" x="0" y="312.8" textLength="158.6" clip-path="url(#ytsum-preview-line-12)">Key&#160;takeaways</text><text class="ytsum-preview-r3" x="976" y="312.8" textLength="12.2" clip-path="url(#ytsum-preview-line-12)">
-</text><text class="ytsum-preview-r3" x="976" y="337.2" textLength="12.2" clip-path="url(#ytsum-preview-line-13)">
-</text><text class="ytsum-preview-r5" x="0" y="361.6" textLength="36.6" clip-path="url(#ytsum-preview-line-14)">&#160;•&#160;</text><text class="ytsum-preview-r3" x="36.6" y="361.6" textLength="939.4" clip-path="url(#ytsum-preview-line-14)">Cache&#160;stable&#160;responses&#160;and&#160;keep&#160;rapidly&#160;changing&#160;data&#160;fresh.&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</text><text class="ytsum-preview-r3" x="976" y="361.6" textLength="12.2" clip-path="url(#ytsum-preview-line-14)">
-</text><text class="ytsum-preview-r5" x="0" y="386" textLength="36.6" clip-path="url(#ytsum-preview-line-15)">&#160;•&#160;</text><text class="ytsum-preview-r3" x="36.6" y="386" textLength="939.4" clip-path="url(#ytsum-preview-line-15)">Choose&#160;an&#160;expiry&#160;that&#160;matches&#160;how&#160;often&#160;the&#160;underlying&#160;data&#160;changes.&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</text><text class="ytsum-preview-r3" x="976" y="386" textLength="12.2" clip-path="url(#ytsum-preview-line-15)">
-</text><text class="ytsum-preview-r5" x="0" y="410.4" textLength="36.6" clip-path="url(#ytsum-preview-line-16)">&#160;•&#160;</text><text class="ytsum-preview-r3" x="36.6" y="410.4" textLength="939.4" clip-path="url(#ytsum-preview-line-16)">Compare&#160;latency&#160;and&#160;error&#160;rates&#160;before&#160;and&#160;after&#160;each&#160;change.&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</text><text class="ytsum-preview-r3" x="976" y="410.4" textLength="12.2" clip-path="url(#ytsum-preview-line-16)">
+</text><text class="ytsum-preview-r3" x="0" y="215.2" textLength="976" clip-path="url(#ytsum-preview-line-8)">Karpathy&#160;builds&#160;a&#160;small&#160;GPT-style&#160;language&#160;model&#160;in&#160;PyTorch,&#160;starting&#160;with&#160;a&#160;&#160;&#160;&#160;</text><text class="ytsum-preview-r3" x="976" y="215.2" textLength="12.2" clip-path="url(#ytsum-preview-line-8)">
+</text><text class="ytsum-preview-r3" x="0" y="239.6" textLength="976" clip-path="url(#ytsum-preview-line-9)">character-level&#160;bigram&#160;baseline&#160;and&#160;developing&#160;a&#160;decoder-only&#160;Transformer.&#160;The&#160;&#160;</text><text class="ytsum-preview-r3" x="976" y="239.6" textLength="12.2" clip-path="url(#ytsum-preview-line-9)">
+</text><text class="ytsum-preview-r3" x="0" y="264" textLength="976" clip-path="url(#ytsum-preview-line-10)">walkthrough&#160;connects&#160;next-token&#160;prediction,&#160;causal&#160;self-attention&#160;and&#160;text&#160;&#160;&#160;&#160;&#160;&#160;</text><text class="ytsum-preview-r3" x="976" y="264" textLength="12.2" clip-path="url(#ytsum-preview-line-10)">
+</text><text class="ytsum-preview-r3" x="0" y="288.4" textLength="976" clip-path="url(#ytsum-preview-line-11)">generation&#160;using&#160;Shakespeare&#160;data.&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</text><text class="ytsum-preview-r3" x="976" y="288.4" textLength="12.2" clip-path="url(#ytsum-preview-line-11)">
+</text><text class="ytsum-preview-r3" x="976" y="312.8" textLength="12.2" clip-path="url(#ytsum-preview-line-12)">
+</text><text class="ytsum-preview-r1" x="0" y="337.2" textLength="158.6" clip-path="url(#ytsum-preview-line-13)">Key&#160;takeaways</text><text class="ytsum-preview-r3" x="976" y="337.2" textLength="12.2" clip-path="url(#ytsum-preview-line-13)">
+</text><text class="ytsum-preview-r3" x="976" y="361.6" textLength="12.2" clip-path="url(#ytsum-preview-line-14)">
+</text><text class="ytsum-preview-r5" x="0" y="386" textLength="36.6" clip-path="url(#ytsum-preview-line-15)">&#160;•&#160;</text><text class="ytsum-preview-r3" x="36.6" y="386" textLength="939.4" clip-path="url(#ytsum-preview-line-15)">Start&#160;with&#160;a&#160;bigram&#160;model&#160;to&#160;establish&#160;a&#160;working&#160;training&#160;and&#160;generation&#160;&#160;&#160;&#160;&#160;</text><text class="ytsum-preview-r3" x="976" y="386" textLength="12.2" clip-path="url(#ytsum-preview-line-15)">
+</text><text class="ytsum-preview-r3" x="36.6" y="410.4" textLength="939.4" clip-path="url(#ytsum-preview-line-16)">loop.&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</text><text class="ytsum-preview-r3" x="976" y="410.4" textLength="12.2" clip-path="url(#ytsum-preview-line-16)">
+</text><text class="ytsum-preview-r5" x="0" y="434.8" textLength="36.6" clip-path="url(#ytsum-preview-line-17)">&#160;•&#160;</text><text class="ytsum-preview-r3" x="36.6" y="434.8" textLength="939.4" clip-path="url(#ytsum-preview-line-17)">Use&#160;causal&#160;self-attention&#160;to&#160;draw&#160;on&#160;earlier&#160;context&#160;without&#160;seeing&#160;future&#160;&#160;&#160;</text><text class="ytsum-preview-r3" x="976" y="434.8" textLength="12.2" clip-path="url(#ytsum-preview-line-17)">
+</text><text class="ytsum-preview-r3" x="36.6" y="459.2" textLength="939.4" clip-path="url(#ytsum-preview-line-18)">tokens.&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</text><text class="ytsum-preview-r3" x="976" y="459.2" textLength="12.2" clip-path="url(#ytsum-preview-line-18)">
+</text><text class="ytsum-preview-r5" x="0" y="483.6" textLength="36.6" clip-path="url(#ytsum-preview-line-19)">&#160;•&#160;</text><text class="ytsum-preview-r3" x="36.6" y="483.6" textLength="939.4" clip-path="url(#ytsum-preview-line-19)">Combine&#160;attention&#160;heads,&#160;feed-forward&#160;layers,&#160;residual&#160;connections&#160;and&#160;layer&#160;</text><text class="ytsum-preview-r3" x="976" y="483.6" textLength="12.2" clip-path="url(#ytsum-preview-line-19)">
+</text><text class="ytsum-preview-r3" x="36.6" y="508" textLength="939.4" clip-path="url(#ytsum-preview-line-20)">normalization.&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</text><text class="ytsum-preview-r3" x="976" y="508" textLength="12.2" clip-path="url(#ytsum-preview-line-20)">
+</text><text class="ytsum-preview-r5" x="0" y="532.4" textLength="36.6" clip-path="url(#ytsum-preview-line-21)">&#160;•&#160;</text><text class="ytsum-preview-r3" x="36.6" y="532.4" textLength="939.4" clip-path="url(#ytsum-preview-line-21)">Compare&#160;training&#160;and&#160;validation&#160;loss,&#160;then&#160;sample&#160;new&#160;text&#160;one&#160;token&#160;at&#160;a&#160;&#160;&#160;&#160;</text><text class="ytsum-preview-r3" x="976" y="532.4" textLength="12.2" clip-path="url(#ytsum-preview-line-21)">
+</text><text class="ytsum-preview-r3" x="36.6" y="556.8" textLength="939.4" clip-path="url(#ytsum-preview-line-22)">time.&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</text><text class="ytsum-preview-r3" x="976" y="556.8" textLength="12.2" clip-path="url(#ytsum-preview-line-22)">
 </text>
     </g>
     </g>
