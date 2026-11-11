@@ -13,11 +13,13 @@ import sys
 import tempfile
 import time
 from dataclasses import dataclass
+from html import unescape
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 from urllib.request import Request, urlopen
 
+import pyperclip
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.theme import Theme
@@ -89,19 +91,41 @@ def clean_text(text: str) -> str:
     return re.sub(r"[\x00-\x08\x0b-\x1f\x7f]", "", text).strip()
 
 
+def normalize_video_input(value: str) -> str:
+    """Unwrap common copied links without evaluating any shell syntax."""
+    value = clean_text(value).translate(dict.fromkeys(map(ord, "\ufeff\u200b\u200e\u200f")))
+    quotes = {'"': '"', "'": "'", "`": "`", "“": "”", "‘": "’", "<": ">"}
+    for _ in range(8):
+        previous = value
+        value = unescape(unquote(value)).strip()
+        # Unescape punctuation only: do not interpret \n, Unicode escapes, or commands.
+        value = re.sub(r"\\([^\w\s]|_)", r"\1", value)
+        if len(value) >= 2 and quotes.get(value[0]) == value[-1]:
+            value = value[1:-1].strip()
+        markdown = re.fullmatch(r"!?\[[^\n]*\]\(\s*(.*?)\s*\)", value)
+        if markdown:
+            value = markdown.group(1).strip()
+        if value == previous:
+            break
+    return value
+
+
 def canonical_url(value: str) -> str:
-    """Accept full links, links without a scheme, or a bare video ID."""
-    value = value.strip()
+    """Accept copied links or a bare ID, then validate the destination and video ID."""
+    value = normalize_video_input(value)
     if re.fullmatch(r"[A-Za-z0-9_-]{11}", value):
         return f"https://www.youtube.com/watch?v={value}"
-    parsed = urlparse(value if "://" in value else f"https://{value}")
-    host = (parsed.hostname or "").lower()
+    try:
+        parsed = urlparse(value if "://" in value else f"https://{value}")
+        host = (parsed.hostname or "").lower()
+    except ValueError as exc:
+        raise CliError("Invalid video link. Try a youtube.com/watch or youtu.be link.") from exc
     video_id = None
     if parsed.scheme in {"http", "https"}:
         if host in {"youtu.be", "www.youtu.be"}:
             video_id = parsed.path.strip("/").split("/")[0]
         elif host in {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com"}:
-            if parsed.path == "/watch":
+            if parsed.path.rstrip("/") == "/watch":
                 video_id = parse_qs(parsed.query).get("v", [None])[0]
             else:
                 parts = parsed.path.strip("/").split("/")
@@ -110,6 +134,16 @@ def canonical_url(value: str) -> str:
     if not video_id or not re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id):
         raise CliError("Provide a YouTube video URL or an 11-character video ID.")
     return f"https://www.youtube.com/watch?v={video_id}"
+
+
+def clipboard_url() -> str:
+    try:
+        value = pyperclip.paste()
+    except (pyperclip.PyperclipException, OSError) as exc:
+        raise CliError("Cannot read the clipboard. Pass the YouTube link as an argument.") from exc
+    if not value.strip():
+        raise CliError("Clipboard is empty. Copy a YouTube link or pass it as an argument.")
+    return value
 
 
 def parse_transcript(output: str) -> Transcript:
@@ -124,8 +158,7 @@ def parse_transcript(output: str) -> Transcript:
 
 def fetch_transcript(url: str | None, *, refresh: bool = False) -> Transcript:
     command = ["ytt", "fetch", "--no-copy", "--no-description"]
-    if url:
-        command.append(canonical_url(url))
+    command.append(canonical_url(clipboard_url() if url is None else url))
     if refresh:
         command.append("--refresh")
     try:

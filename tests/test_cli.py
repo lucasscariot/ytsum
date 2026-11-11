@@ -27,6 +27,29 @@ TRANSCRIPT = cli.Transcript(
 
 
 class InputsTest(unittest.TestCase):
+    def test_common_copied_forms_include_the_exact_reported_escaped_url(self):
+        expected = "https://www.youtube.com/watch?v=20CgG5pUv9Q"
+        for value in [
+            r"https://www.youtube.com/watch\?v\=20CgG5pUv9Q",
+            r"https:\/\/www.youtube.com\/watch\?v\=20CgG5pUv9Q\&t\=10",
+            r"\"https://www.youtube.com/watch\?v\=20CgG5pUv9Q\"",
+            ' "https://www.youtube.com/watch?v=20CgG5pUv9Q" ',
+            "‘https://youtu.be/20CgG5pUv9Q’",
+            "“https://youtu.be/20CgG5pUv9Q”",
+            "`https://youtu.be/20CgG5pUv9Q`",
+            "<https://youtu.be/20CgG5pUv9Q>",
+            "[Watch this video](https://youtu.be/20CgG5pUv9Q)",
+            "[Watch this video](<https://youtu.be/20CgG5pUv9Q>)",
+            "https://youtube.com/watch/?v=20CgG5pUv9Q",
+            "https://youtube.com/watch?feature=shared&amp;v=20CgG5pUv9Q",
+            "https://youtube.com/watch%3Fv%3D20CgG5pUv9Q%26t%3D30",
+            "https%3A%2F%2Fyoutu.be%2F20CgG5pUv9Q",
+            "\ufeffhttps://youtu.be/20CgG5pUv9Q\u200b",
+            "https://youtu.be/20Cg\u200bG5pUv9Q",
+        ]:
+            with self.subTest(value=value):
+                self.assertEqual(cli.canonical_url(value), expected)
+
     def test_all_supported_links_resolve_to_the_same_video(self):
         for value in [
             "oc8G53Tbsvs",
@@ -45,6 +68,12 @@ class InputsTest(unittest.TestCase):
             "https://youtube.com.evil.example/watch?v=oc8G53Tbsvs",
             "youtube.com/watch?v=bad",
             "file:///tmp/captions",
+            "[Watch](https://evil.example/watch?v=oc8G53Tbsvs)",
+            "https%3A%2F%2Fevil.example%2Fwatch%3Fv%3Doc8G53Tbsvs",
+            r"https://youtube.com.evil.example/watch\?v\=oc8G53Tbsvs",
+            "https://evil.example/?next=https://youtube.com/watch?v=oc8G53Tbsvs",
+            "$(echo https://youtu.be/oc8G53Tbsvs)",
+            "https://[youtube.com/watch?v=oc8G53Tbsvs",
         ]:
             with self.subTest(value=value), self.assertRaises(cli.CliError):
                 cli.canonical_url(value)
@@ -59,6 +88,59 @@ class InputsTest(unittest.TestCase):
         self.assertIn("--no-copy", command)
         self.assertIn("--refresh", command)
         self.assertIn(TRANSCRIPT.url, command)
+
+    def test_escaped_argument_is_normalized_before_invoking_ytt(self):
+        output = f"{TRANSCRIPT.url}\n\n# Video\n\n## Transcript\n\nCaptions.\n"
+        result = subprocess.CompletedProcess([], 0, output, "")
+        with patch.object(cli.subprocess, "run", return_value=result) as run:
+            cli.fetch_transcript(r"https://www.youtube.com/watch\?v\=20CgG5pUv9Q")
+        self.assertIn("https://www.youtube.com/watch?v=20CgG5pUv9Q", run.call_args.args[0])
+        self.assertNotIn("shell", run.call_args.kwargs)
+
+    def test_clipboard_inputs_use_the_same_normalization_and_never_copy(self):
+        output = f"{TRANSCRIPT.url}\n\n# Video\n\n## Transcript\n\nCaptions.\n"
+        result = subprocess.CompletedProcess([], 0, output, "")
+        with (
+            patch.object(cli.pyperclip, "paste", return_value=r"youtube.com/watch\?v\=oc8G53Tbsvs"),
+            patch.object(cli.pyperclip, "copy") as copy,
+            patch.object(cli.subprocess, "run", return_value=result) as run,
+        ):
+            cli.fetch_transcript(None)
+        self.assertIn(TRANSCRIPT.url, run.call_args.args[0])
+        self.assertIn("--no-copy", run.call_args.args[0])
+        copy.assert_not_called()
+
+    def test_empty_or_unavailable_clipboard_has_an_actionable_error(self):
+        with (
+            patch.object(cli.pyperclip, "paste", return_value=" \n"),
+            patch.object(cli.subprocess, "run") as run,
+            self.assertRaisesRegex(cli.CliError, "Clipboard is empty"),
+        ):
+            cli.fetch_transcript(None)
+        run.assert_not_called()
+        with (
+            patch.object(cli.pyperclip, "paste", side_effect=cli.pyperclip.PyperclipException()),
+            self.assertRaisesRegex(cli.CliError, "Pass the YouTube link"),
+        ):
+            cli.fetch_transcript(None)
+
+    def test_explicit_empty_argument_does_not_fall_back_to_the_clipboard(self):
+        with (
+            patch.object(cli.pyperclip, "paste") as paste,
+            self.assertRaises(cli.CliError),
+        ):
+            cli.fetch_transcript("")
+        paste.assert_not_called()
+
+    def test_malformed_url_reports_an_error_without_a_traceback(self):
+        stderr = io.StringIO()
+        with (
+            patch.object(cli.sys, "argv", ["ytsum", "https://[broken/watch?v=oc8G53Tbsvs", "-q"]),
+            contextlib.redirect_stderr(stderr),
+        ):
+            self.assertEqual(cli.main(), 1)
+        self.assertIn("Invalid video link", stderr.getvalue())
+        self.assertNotIn("Traceback", stderr.getvalue())
 
     def test_fetch_failures_and_empty_captions_are_actionable(self):
         result = subprocess.CompletedProcess([], 1, "", "Captions are disabled.")

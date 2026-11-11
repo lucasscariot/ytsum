@@ -22,6 +22,22 @@ Markdown in a terminal. Progress and timing go to stderr. `-o FILE` also saves
 the Markdown, creating parent directories and replacing an existing destination.
 The clipboard is read only when no URL is supplied, and is never overwritten.
 
+## Copied links
+
+Links can include literal shell escapes, percent-encoded punctuation, HTML entities,
+or surrounding quotes, backticks, angle brackets, or Markdown link syntax. These
+forms are normalized before fetching, including when read from the clipboard:
+
+```sh
+ytsum 'https://www.youtube.com/watch\?v\=20CgG5pUv9Q'
+ytsum '[Watch](https://youtu.be/20CgG5pUv9Q)'
+ytsum 20CgG5pUv9Q
+```
+
+Ordinary quoted URLs also work. Tracking parameters and timestamps are discarded
+after identifying the video. Unrelated sites and malformed video IDs are rejected
+with a readable error; URL text is never executed as shell code.
+
 ## Setup
 
 Requires Python 3.12+, `uv`, `ytt` from https://github.com/dudarev/ytt, and Ollama.

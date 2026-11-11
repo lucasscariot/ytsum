@@ -4,10 +4,10 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ytsum"
-version = "0.1.0"
+version = "0.1.1"
 description = "Readable YouTube summaries using ytt and local Ollama models"
 requires-python = ">=3.12"
-dependencies = ["rich>=13.9,<15"]
+dependencies = ["pyperclip>=1.9,<2", "rich>=13.9,<15"]
 
 [project.scripts]
 ytsum = "ytsum.cli:main"
