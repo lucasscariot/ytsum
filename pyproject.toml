@@ -4,13 +4,29 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ytsum"
-version = "0.1.1"
+version = "0.1.2"
 description = "Readable YouTube summaries using ytt and local Ollama models"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Lucas" }]
+keywords = ["youtube", "summary", "transcript", "ollama", "cli", "markdown"]
 requires-python = ">=3.12"
 dependencies = ["pyperclip>=1.9,<2", "rich>=13.9,<15"]
+
+[project.urls]
+Homepage = "https://github.com/lucasscariot/ytsum"
+Issues = "https://github.com/lucasscariot/ytsum/issues"
+Source = "https://github.com/lucasscariot/ytsum"
 
 [project.scripts]
 ytsum = "ytsum.cli:main"
 
+[dependency-groups]
+dev = ["ruff==0.17.4"]
+
 [tool.ruff]
 line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

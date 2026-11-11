@@ -1,112 +1,257 @@
+<div align="center">
+
 # ytsum
 
-One command turns a YouTube link into a readable summary, using `dudarev/ytt`
-for captions and a local Ollama model for summarization.
+**A YouTube link in. Useful notes out.**
+
+Summarize video transcripts with a local model, read them in your terminal,
+and keep the results as Markdown.
+
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+</div>
 
 ```sh
-ytsum "https://youtube.com/watch?v=oc8G53Tbsvs"
-ytsum "youtube.com/watch?v=oc8G53Tbsvs" --brief
-ytsum "URL" --detailed -o notes.md
-ytsum                         # Read a YouTube link from the clipboard
-ytsum - < transcript.txt       # Summarize an existing transcript
+ytsum "https://youtu.be/20CgG5pUv9Q"
 ```
 
-The default output includes a short overview, key takeaways, useful supporting
-details, and actions or caveats when the source supports them. The source title
-and link come from `ytt`. The prompt asks the model to preserve facts and avoid
-inventing quotations, timestamps, or advice.
+![An illustrative ytsum summary with an overview and clear takeaways](docs/terminal.svg)
 
-Terminals receive styled headings, wrapped paragraphs, and readable bullets.
-Redirection and pipes receive clean Markdown. Use `--markdown` to request raw
-Markdown in a terminal. Progress and timing go to stderr. `-o FILE` also saves
-the Markdown, creating parent directories and replacing an existing destination.
-The clipboard is read only when no URL is supplied, and is never overwritten.
+*Illustrative output. Actual summaries use the video's title, link, and captions.*
 
-## Copied links
+## What you get
 
-Links can include literal shell escapes, percent-encoded punctuation, HTML entities,
-or surrounding quotes, backticks, angle brackets, or Markdown link syntax. These
-forms are normalized before fetching, including when read from the clipboard:
+- **Readable notes:** an overview, key takeaways, useful details, and relevant caveats.
+- **Local inference:** Ollama runs on your computer by default. No cloud account or API key is required.
+- **Easy exports:** styled output in a terminal; clean Markdown when saved or piped.
+- **Quick reruns:** completed summaries are cached, so repeating a request skips inference.
+- **Long videos:** processes the transcript in parts when needed, then combines the notes.
+- **Flexible input:** full links, short links, Shorts, video IDs, clipboard links, and transcript files.
 
-```sh
-ytsum 'https://www.youtube.com/watch\?v\=20CgG5pUv9Q'
-ytsum '[Watch](https://youtu.be/20CgG5pUv9Q)'
-ytsum 20CgG5pUv9Q
-```
+Captions come from [dudarev/ytt](https://github.com/dudarev/ytt).
+This tool does not download audio, transcribe speech, or analyze on-screen visuals.
 
-Ordinary quoted URLs also work. Tracking parameters and timestamps are discarded
-after identifying the video. Unrelated sites and malformed video IDs are rejected
-with a readable error; URL text is never executed as shell code.
+## Quickstart
 
-## Setup
+### 1. Install the prerequisites
 
-Requires Python 3.12+, `uv`, `ytt` from https://github.com/dudarev/ytt, and Ollama.
+You need [uv](https://docs.astral.sh/uv/getting-started/installation/),
+[Git](https://git-scm.com/downloads), and [Ollama](https://ollama.com/download).
+uv manages the Python 3.12 environment for the commands below.
+
+On macOS with Homebrew:
 
 ```sh
+brew install uv ollama
 brew services start ollama
-ollama pull qwen3.5:9b-q4_K_M
-uv tool install /absolute/path/to/this/checkout
 ```
 
-The installed default is `qwen3.5:9b-q4_K_M`, with thinking disabled, a low temperature,
-and bounded output. This explicit 4-bit variant supports schema-constrained output
-instead of selecting the MLX backend automatically. Models stay warm for ten minutes.
-The 9B model was chosen after comparing it with 4B on a real transcript: it
-preserved important qualifications better, while taking about 29 seconds on the
-M4 Max for the test video. This is one example, not a general benchmark.
-For faster, less precise summaries, use the also-installed
-`--model qwen3.5:4b-q4_K_M`. Set `YTSUM_MODEL` to change the default. The selected model must
-follow JSON instructions and support disabling thinking. `OLLAMA_HOST` selects the
-server; the default is `http://127.0.0.1:11434`. With that default, inference stays
-on this Mac. Only fetching captions contacts YouTube.
+On Linux or Windows, install the prerequisites using their official instructions.
+Start the Ollama app or run `ollama serve` in another terminal before continuing.
+End-to-end usage has been tested on Apple Silicon macOS. Linux and Windows have
+not been verified end to end.
 
-## Efficiency and long videos
-
-Completed summaries are cached in `${XDG_CACHE_HOME:-~/.cache}/ytsum`, keyed by
-the full transcript, model name, summary style, and prompt version. This avoids
-running inference again for the same input. Caption caching is provided by `ytt`.
-`--refresh` refreshes both captions and the summary. `--no-cache` bypasses only
-the summary cache. Refresh after updating weights behind an existing model tag.
-
-Inputs are processed in full. Long transcripts are split at paragraph/word
-boundaries, summarized in order, and combined; very long note sets are reduced
-in stages. Each request uses an explicit context allocation up to 65,536 tokens
-with a conservative UTF-8 byte budget and reserved space for the prompt/output.
-Long videos therefore take additional calls, and compression can omit details.
-Captions can also contain transcription errors; check the original for exact
-quotes or consequential claims. Empty captions, interrupted generation, invalid
-model responses, and truncated output fail with an error instead of producing a
-partial document. Errors do not overwrite the requested output file.
-
-## Commands
+### 2. Install the transcript tool and ytsum
 
 ```sh
-ytsum --help
-ytsum "URL" --brief                         # Roughly 120-180 words
-ytsum "URL" --detailed                      # Roughly 500-700 words
-ytsum "URL" --model qwen3.5:4b-q4_K_M        # Faster, less precise summaries
-ytsum "URL" --refresh                       # Fetch and generate again
-ytsum "URL" | tee summary.md                # Display and save raw Markdown
-ytsum "URL" -q --markdown                   # Hide progress and timing
+uv tool install --python 3.12 git+https://github.com/dudarev/ytt.git
+uv tool install --python 3.12 git+https://github.com/lucasscariot/ytsum.git
+uv tool update-shell
 ```
 
-`ytt`'s preferred caption languages still apply. The summary is in English.
-Summary lengths are targets, not fixed requirements; short videos get shorter
-summaries. Unsupported or empty sections are omitted. Summaries use validated
-JSON and deterministic Markdown rendering for consistent formatting. Ollama's
-schema-constrained output is used when available. The MLX backend falls back to
-schema instructions in the prompt, with the same validation before rendering.
+If uv updated your shell configuration, **open a new terminal** before the next step.
+
+Use the linked YouTube version of `ytt`: Homebrew's `ytt` package is an unrelated
+YAML templating tool. Remove that package first if it occupies the same command name.
+
+### 3. Configure languages and download a model
+
+```sh
+ytt config languages en
+ollama pull qwen3.5:9b-q4_K_M
+```
+
+The default model download is about **6.6 GB**. Running it also needs memory for
+the model and transcript context; download size is not a RAM requirement.
+See [choosing a model](#choosing-a-model) for a smaller option.
+
+### 4. Summarize a video
+
+```sh
+ytsum "https://youtu.be/20CgG5pUv9Q"
+```
+
+The first run fetches captions and generates a summary. Repeating the same
+request uses the local caption and summary caches.
+
+## Everyday use
+
+| Want to… | Run |
+| --- | --- |
+| Get the usual overview and notes | `ytsum "URL"` |
+| Read a shorter summary | `ytsum "URL" --brief` |
+| Keep more supporting detail | `ytsum "URL" --detailed` |
+| Read a link from your clipboard | `ytsum` |
+| Save Markdown and display the result | `ytsum "URL" -o notes.md` |
+| Display and save raw Markdown | `ytsum "URL" \| tee notes.md` |
+| Summarize an existing transcript | `ytsum - < transcript.txt` |
+| Refresh captions and regenerate | `ytsum "URL" --refresh` |
+
+Replace `URL` with a YouTube link. Keep links in quotes so your shell handles
+characters such as `?` and `&` correctly.
+
+The normal summary targets 200–300 words, with sections for **Summary**,
+**Key takeaways**, **Useful details**, **Action items**, and **Caveats**.
+Empty sections are omitted; actions are requested only when the source recommends
+them. `--brief` targets 120–180 words and includes only the overview and takeaways.
+`--detailed` targets 500–700 words. Short sources get shorter summaries.
+Summaries are in English.
+
+### Copied links work too
+
+```sh
+ytsum 20CgG5pUv9Q
+ytsum 'https://www.youtube.com/watch\?v\=20CgG5pUv9Q'
+ytsum '[Watch this](https://youtu.be/20CgG5pUv9Q)'
+```
+
+The same normalization applies to clipboard input. Literal shell escapes,
+percent encoding, HTML entities, and surrounding quotes or angle brackets are
+handled automatically. Tracking parameters and timestamps are discarded once
+the video is identified. URL text is never executed as shell code.
+
+### Files and pipes
+
+```sh
+ytsum "https://youtu.be/20CgG5pUv9Q" --detailed -o notes/video.md
+ytsum "https://youtu.be/20CgG5pUv9Q" > summary.md
+cat transcript.txt | ytsum - --brief
+```
+
+`-o` creates parent directories and replaces an existing file after a successful
+summary. Errors do not overwrite the requested destination. Progress and timing
+go to stderr; stdout contains the summary. The clipboard is never overwritten.
+
+## Choosing a model
+
+| Model | Download | Suggested use |
+| --- | --- | --- |
+| `qwen3.5:9b-q4_K_M` | ~6.6 GB | Default; a balance of speed and fidelity |
+| `qwen3.5:4b-q4_K_M` | ~3.3 GB | Faster, with a greater chance of missing or misstating details |
+
+These are [Ollama model tags](https://ollama.com/library/qwen3.5/tags).
+The explicit `q4_K_M` variants support constrained JSON output. Thinking is disabled
+to reduce latency, and models stay loaded for up to ten minutes between requests.
+
+```sh
+ollama pull qwen3.5:4b-q4_K_M
+ytsum "https://youtu.be/20CgG5pUv9Q" --model qwen3.5:4b-q4_K_M
+```
+
+Set `YTSUM_MODEL` in your shell to change the default:
+
+```sh
+export YTSUM_MODEL=qwen3.5:4b-q4_K_M
+```
+
+Other installed Ollama models must follow the requested JSON structure and support
+disabling thinking. Backends without constrained output fall back to JSON
+instructions, with validation before anything is rendered or saved.
+
+## Options and configuration
+
+Run `ytsum --help` for the complete interface.
+
+| Option | Effect |
+| --- | --- |
+| `--model MODEL` | Select an installed Ollama model |
+| `-o FILE`, `--output FILE` | Also save the summary as Markdown |
+| `--markdown` | Print raw Markdown even in a terminal |
+| `--refresh` | Refresh captions and regenerate the summary |
+| `--no-cache` | Bypass the summary cache; caption caching still applies |
+| `-q`, `--quiet` | Hide progress and timing |
+| `--version` | Show the installed version |
+
+| Environment variable | Default | Purpose |
+| --- | --- | --- |
+| `YTSUM_MODEL` | `qwen3.5:9b-q4_K_M` | Default model |
+| `OLLAMA_HOST` | `http://127.0.0.1:11434` | Ollama server address |
+| `XDG_CACHE_HOME` | `~/.cache` | Parent directory for the `ytsum/` summary cache |
+
+Caption language preferences belong to `ytt`. For example,
+`ytt config languages en,fr` tries English before French.
+
+## How it works
+
+```text
+YouTube link → ytt captions → local Ollama model → validated summary → Markdown
+```
+
+Fetching captions requires internet access. With the default localhost server
+and a local model, inference runs on your computer. A remote `OLLAMA_HOST` sends
+the transcript to that server instead.
+
+Summary caches are keyed by transcript, model name, style, and prompt version.
+Changing any of those creates a new entry. If you update weights behind the same
+model tag, use `--refresh` to regenerate old summaries. Caption caches are managed
+separately by `ytt`.
+
+Long transcripts are split without discarding text, summarized in order, and
+combined. Each request has an explicit context allocation up to 65,536 tokens.
+Longer videos need more model calls, and compression can omit details. Captions
+and local models can misstate facts; check the source when exact wording or
+numbers matter.
+
+## Troubleshooting
+
+| Problem | What to try |
+| --- | --- |
+| `ytsum` or `ytt` is not found | Run `uv tool update-shell`, then open a new terminal |
+| `ytt` shows YAML templating options | Install [dudarev/ytt](https://github.com/dudarev/ytt) using the quickstart |
+| Caption languages are not configured | Run `ytt config languages en` |
+| Ollama cannot be reached | Open Ollama, run `ollama serve`, or use `brew services start ollama` on macOS |
+| Model is unavailable | Run `ollama pull qwen3.5:9b-q4_K_M`, or pull your selected model |
+| Captions cannot be fetched | Try `ytt fetch "URL" --no-copy`; captions may be unavailable or YouTube may be blocking requests |
+| Clipboard cannot be read | Pass the link directly; Linux may require an additional clipboard backend |
+| Output looks like an old result | Use `--refresh` |
+| Generation is slow | Try the 4B model and `--brief`; long transcripts and the first load take longer |
+| Model output is invalid or truncated | Try `--brief`, `--refresh`, or another supported model |
+
+## Update or uninstall
+
+```sh
+uv tool install --reinstall --python 3.12 git+https://github.com/lucasscariot/ytsum.git
+uv tool uninstall ytsum
+```
+
+Uninstalling keeps downloaded Ollama models and local caches.
 
 ## Development
 
 ```sh
-uv sync --python 3.12
+git clone https://github.com/lucasscariot/ytsum.git
+cd ytsum
+uv sync --locked
+uv run ruff check .
+uv run ruff format --check .
 uv run python -m unittest discover -s tests -v
-uvx ruff check .
-uvx ruff format --check .
-uv tool install --reinstall /absolute/path/to/this/checkout
+uv build --no-sources
 ```
 
-This is a local repository without a configured GitHub publication target.
-Uninstall with `uv tool uninstall ytsum`. This preserves the source, downloaded
-Ollama model, and caches.
+Automated tests use mocked captions and model responses; they do not need Ollama,
+YouTube access, or model downloads. To smoke-test the built package in an isolated
+environment, run `uvx --from ./dist/ytsum-0.1.2-py3-none-any.whl ytsum --help`.
+Use `uv tool install --reinstall .` after editing the source to update your
+installed command.
+
+Bug reports and improvements are welcome through [issues](https://github.com/lucasscariot/ytsum/issues)
+and pull requests. Include your OS, `ytsum --version`, the command, and the error
+message so the problem can be reproduced.
+
+## Credits and license
+
+Built with [ytt](https://github.com/dudarev/ytt), [Ollama](https://ollama.com/),
+[Rich](https://github.com/Textualize/rich), and [pyperclip](https://github.com/asweigart/pyperclip).
+
+[MIT License](LICENSE) · Copyright © 2026 Lucas
